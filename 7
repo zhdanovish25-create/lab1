@@ -1,0 +1,94 @@
+const int redPin = 13;
+const int yellowPin = 12;
+const int greenPin = 11;
+const int buttonPin = 2;
+
+int buttonState = 0;
+int lastButtonState = HIGH;
+bool trafficLightActive = false;
+unsigned long waitStartTime;
+
+const long greenTime = 5000;
+const long yellowBlinkTime = 3000;
+const long yellowTime = 1000;
+const long redTime = 5000;
+const long redYellowTime = 1000;
+const long delayBeforeStart = 5000;
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(yellowPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
+  
+  digitalWrite(greenPin, HIGH);
+  digitalWrite(yellowPin, LOW);
+  digitalWrite(redPin, LOW);
+  Serial.begin(9600);
+  Serial.println("Светофор ожидает нажатия кнопки...");
+}
+
+void loop() {
+  buttonState = digitalRead(buttonPin);
+  
+  if (buttonState == LOW && lastButtonState == HIGH) {
+    delay(50);
+    if (digitalRead(buttonPin) == LOW) {
+      trafficLightActive = true;
+      waitStartTime = millis();
+      Serial.println("Кнопка нажата! Начинаем отсчет 5 секунд...");
+    }
+  }
+  
+  lastButtonState = buttonState;
+
+  if (trafficLightActive) {
+    if (millis() - waitStartTime < delayBeforeStart) {
+      if ((millis() / 500) % 2 == 0) {
+        digitalWrite(greenPin, HIGH);
+      } else {
+        digitalWrite(greenPin, LOW);
+      }
+    } else {
+      runTrafficLightCycle();
+      trafficLightActive = false;
+      digitalWrite(greenPin, HIGH);
+      digitalWrite(yellowPin, LOW);
+      digitalWrite(redPin, LOW);
+      Serial.println("Светофор завершил цикл. Ожидание нового нажатия.");
+    }
+  }
+}
+
+void runTrafficLightCycle() {
+  Serial.println("Запуск цикла светофора!");
+  digitalWrite(greenPin, LOW);
+  
+  digitalWrite(greenPin, HIGH);
+  Serial.println("Фаза: ЗЕЛЕНЫЙ");
+  delay(greenTime);
+  
+  Serial.println("Фаза: ЗЕЛЕНЫЙ МИГАЕТ");
+  for (int i = 0; i < 6; i++) {
+    digitalWrite(greenPin, !digitalRead(greenPin));
+    delay(500);
+  }
+  
+  digitalWrite(greenPin, LOW);
+  digitalWrite(yellowPin, HIGH);
+  Serial.println("Фаза: ЖЕЛТЫЙ");
+  delay(yellowTime);
+  
+  digitalWrite(yellowPin, LOW);
+  digitalWrite(redPin, HIGH);
+  Serial.println("Фаза: КРАСНЫЙ");
+  delay(redTime - redYellowTime);
+  
+  digitalWrite(yellowPin, HIGH);
+  Serial.println("Фаза: КРАСНЫЙ + ЖЕЛТЫЙ");
+  delay(redYellowTime);
+  
+  digitalWrite(redPin, LOW);
+  digitalWrite(yellowPin, LOW);
+  Serial.println("Цикл светофора завершен.");
+}
